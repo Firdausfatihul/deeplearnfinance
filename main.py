@@ -24,12 +24,13 @@ scaler = MinMaxScaler(feature_range=(0, 1))
 scaled_data = scaler.fit_transform(df[['price', 'PE_ratio', 'PEG_ratio', 'EPS','EPS Growth']])
 
 # The to_sequences function is used to create sequences from the scaled data
-def to_sequences(data, seq_length):
+def to_sequences_eps(data, seq_length):
     x = []
     y = []
-    for i in range(len(data) - seq_length):
+    EPS_index = data.columns.get_loc('EPS')  # Replace 'EPS' with the actual column name if different
+    for i in range(len(data)-seq_length):
         x.append(data[i:(i + seq_length), :])
-        y.append(data[i + seq_length, 0])  # Price is the first column and our target
+        y.append(data[i + seq_length, EPS_index])  # Target is the EPS column
     return np.array(x), np.array(y)
 
 sequences, labels = to_sequences(scaled_data, sequence_length)
@@ -39,7 +40,7 @@ X_train, X_test, y_train, y_test = train_test_split(sequences, labels, test_size
 
 # Define the LSTM model
 model = Sequential()
-model.add(LSTM(50, return_sequences=True, input_shape=(sequence_length, 3)))
+model.add(LSTM(50, return_sequences=True, input_shape=(sequence_length, 5)))
 model.add(Dropout(0.2))
 model.add(LSTM(50, return_sequences=False))
 model.add(Dropout(0.2))
@@ -49,7 +50,7 @@ model.add(Dense(1))
 model.compile(loss='mean_squared_error', optimizer='adam')
 
 # Fit the model
-history = model.fit(X_train, y_train, epochs, batch_size=32, validation_data=(X_test, y_test), verbose=1)
+history = model.fit(x=X_train, y=y_train, epochs=epochs, batch_size=32, validation_data=(X_test, y_test), verbose=1)
 
 model.save('dummy_price_prediction_model5.h5')
 
